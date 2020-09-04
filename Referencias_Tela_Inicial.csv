@@ -1,0 +1,11 @@
+﻿Modelo;Anomes;Data_Exec;Farol;Comentario
+PISOS;202008;20200810;lime;Modelo executado com contigência na base de CETIP devido erro de processamento de base origem
+BC;202008;20200812;lime;
+BACEN;202008;20200808;lime;
+MODELO;202008;20200805;lime;
+SINAL VITAL;202008;20200803;lime;
+ELEIÇÃO;202008;20200820;lime;
+BACEN;202009;20200914;lime;
+MODELO;202009;20200912;red;
+SINAL VITAL;202009;20200913;yellow;
+ELEIÇÃO;202009;20200919;red;Eleição reprocessada devido problema com bases de unidade externas

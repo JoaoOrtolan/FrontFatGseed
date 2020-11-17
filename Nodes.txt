@@ -1,0 +1,18 @@
+ID	Label	Value	Group	Shape	Color	Title
+ID1	Eleição faturamento	100	A	circle	green	É a sumarização de todos os processos de faturamento. Flui para todo o crédito
+ID2	Sinal vital NOVA4	65	B	square	blue	Deve morrer com a chegada de sinal vital CRM
+ID3	Modelo de faturamento -  Analítico	65	C	square	red	Morre com a implantação do Faturamento Correntista
+ID4	Faturamento Não-Correntista 	65	D	square	red	"MRM15_296
+Seguir: 5540"
+ID5	Faturamento Correntista	65	E	square	red	"MRM24_904
+Seguir: 5596"
+ID6	Base do Bacen	65	F	triangle	orange	Informação disponibilizada pelo BACEN com informações de endividamento do cliente
+ID7	Informações comprovadas	65	G	square	orange	Sumarização das 3 informações compravadas que temos
+ID8	DAC	40	G	triangle	orange	Documento assinado pelo contador (ou Documento de apoio ao crédito). É um documento, mensal, que indica o faturamento do cliente
+ID9	Balanço	40	G	triangle	orange	Balanço contábil
+ID10	Balancete	40	G	triangle	orange	Balancete contábil
+ID11	Modelo de Pisos	65	H	square	purple	Priorização do modelo de folha de pagamento, franquias, veículos e BC
+ID12	Folha de pagamento	40	H	triangle	purple	XXX
+ID13	Modelo de franquias	40	H	triangle	purple	XXX
+ID14	Modelo de veículos	40	H	triangle	purple	XXX
+ID15	Modelo do BC	65	I	square	red	XXX

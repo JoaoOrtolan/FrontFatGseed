@@ -1,0 +1,167 @@
+library(shiny)
+library(shinydashboard)
+library(shinyjs)
+library(htmltools)
+library(plotly)
+library(leaflet)
+# library(shinyDND)
+library(shinyBS)
+library(filesstrings)
+
+
+Caminho <- "C:/Users/Joao Ortolan/Desktop/Control Room Faturamento/"
+Opcoes_Segmento <- c("EMP1", "EMP2", "EMP3", "EMP4", "NCORR", "Outros", "Todos")
+Opcoes_Eleicao  <- c("G","B","N")
+
+dataModalPisosEdit <- function(failed = FALSE) {
+
+  modalDialog(
+    selectInput("SIParecerPisos", "Farol Parecer", choices = c("Manter farol", "Farol verde", "Farol amarelo", "Farol vermelho"), selected = "Manter farol", width = "600px"),
+    textInput("TIParecerPisos", "Responsável pelo parecer", width = "600px"),
+    textAreaInput("TAIParecerPisos", "Digite o parecer do modelo", placeholder = "Modelo liberado para uso", width = "600px"),
+    span("Caso já exista um parecer vigente, ele será direcionado para a seção de comentários"),
+    if (failed)
+      div(tags$b("Parecer inválido", style = "color: red;")),
+    
+    footer = tagList(
+      modalButton("Fechar"),
+      actionButton("ParecerOKPisos", "OK")
+    )
+  )
+}
+
+
+dataModalPisosErase <- function(...) {
+  
+  modalDialog(
+    span("Você tem certeza que deseja apagar o parecer?"),
+    footer = tagList(
+      modalButton("Não"),
+      actionButton("EraseOKPisos", "Sim")
+    )
+  )
+}
+source(paste0(Caminho,"Roda_Grafico_IC.R"), encoding = "UTF-8")
+
+
+ui <- dashboardPage(skin = "black",
+
+  dashboardHeader(title = "Faturamento - GSEED"),
+  dashboardSidebar(
+    sidebarMenu(
+      dateInput("DateInputSidebar", "Anomes Visao", format = "yyyymm", language = "pt-br", startview = "year"),
+      hr(),
+      menuItem("Visão Geral", tabName = "SidebarVisaoGeral", icon = icon("fas fa-file")),
+      menuItem("Controles", tabName = "SidebarControles", icon = icon("search", lib="glyphicon"),
+        menuSubItem("Eleição", tabName = "SubSidebarEleicao"),
+        menuSubItem("BC", tabName = "SubSidebarBC"),
+        menuSubItem("Modelo", tabName = "SubSidebarModelo"),
+        menuSubItem("Bacen", tabName = "SubSidebarBacen"),
+        menuSubItem("Pisos", tabName = "SubSidebarPisos"),
+        menuSubItem("Sinal Vital", tabName = "SubSidebarSinalVital")),
+      menuItem("Consulta CNPJ", tabName = "SidebarConsultaCNPJ", icon = icon("fas fa-building"), 
+                numericInput("NumInputCNPJ", "CNPJ", 0),
+                dateInput("DateInputCNPJ", "Anomes Faturamento", format = "yyyymm", language = "pt-br", startview = "year"),
+                radioButtons("radioButtonsCNPJ", "Modelo", c("Eleição", "Fat. Não Corr.", "Fat. Corr."), selected="Eleição"),
+                actionButton("ActionButtonCNPJ", "Buscar"),
+                helpText("Só mês e ano serão considerados."),
+                helpText("Apartir do dia 20, temos m+1")))),
+  dashboardBody(useShinyjs(),tags$head(HTML("<script type='text/javascript' src='sbs/shinyBS.js'></script>")), 
+                tags$script(HTML("
+        var openTab = function(tabName){
+          $('a', $('.sidebar')).each(function() {
+            if(this.getAttribute('data-value') == tabName) {
+              this.click()
+            };
+          });
+        }
+      ")),
+                tags$style(
+                  type = 'text/css',
+                  '.modal-dialog { width: fit-content !important;};'
+                )
+  ,tabItems(
+    tabItem(tabName = "SidebarVisaoGeral",
+      tabsetPanel(
+        tabPanel("Indicadores", hr(),
+          fluidRow(infoBoxOutput("InfoBoxPisos"),infoBoxOutput("InfoBoxBC"),infoBoxOutput("InfoBoxBacen")),
+          fluidRow(infoBoxOutput("InfoBoxModelo"),infoBoxOutput("InfoBoxSinalVital"),infoBoxOutput("InfoBoxEleicao"))),
+        tabPanel("Mapa processos", leafletOutput("MapMind")))),
+    tabItem(tabName = "SubSidebarEleicao",
+      titlePanel("Controle eleição"), downloadButton("DownloadEleicao", "Download Diario"),
+      fluidRow(box("Filtros de público", width=9, collapsible=TRUE,
+                   fluidRow(column(3,wellPanel(radioButtons("RBSegmentoEleicao", "Segmento", Opcoes_Segmento, selected=c("Todos")))),
+                            column(3,wellPanel(radioButtons("RBMetodoEleicao", "Método", Opcoes_Eleicao, selected=c("G")))))),
+               box(width=3, collapsible=TRUE,
+                   checkboxGroupInput("CBGIRefsEleicao", "Referências consideradas"))),
+      fluidRow(box(width = 12, plotlyOutput("PlotOutputGraficoEleicao"))),
+      fluidRow(box(width = 3, selectInput("SelectInputPlotEleicao", "Eixo Y Gráfico", c())),
+               box(width = 3, selectInput("SelectInputLSICEleicao", "Limite Superior Banda", c())),
+               box(width = 3, selectInput("SelectInputLIICEleicao", "Limite Inferior Banda", c())),
+               box(width = 3, textOutput("TextOutput1Eleicao"),
+                              textOutput("TextOutput2Eleicao"),
+                              textOutput("TextOutput3Eleicao"),
+                              actionButton("AtualizaGraficosEleicao", "Atualiza Gráfico")))),
+    tabItem(tabName = "SubSidebarBC",
+      fluidRow(box("Controle BC"))),
+    tabItem(tabName = "SubSidebarModelo",
+      fluidRow(box("Controle Modelo"))),
+    tabItem(tabName = "SubSidebarBacen",
+      fluidRow(box("Controle Bacen"))),
+    tabItem(tabName = "SubSidebarPisos",titlePanel("Controle Pisos"),
+          box(id = "ParecerfinalPisos", title="Parecer final", width=12, collapsible=TRUE,
+          fluidRow(column(12,actionButton('EditButtonPisos', NULL, icon=icon('edit', lib = "font-awesome"), style='padding:4px; font-size:80%'),
+                             actionButton('EraseButtonPisos', NULL, icon=icon('trash-alt', lib = "font-awesome"), style='padding:4px; font-size:80%'))),
+          hr(),
+          fluidRow(column(12,verbatimTextOutput("VTOFarolParecerPisos"))),
+          fluidRow(column(12,verbatimTextOutput("VTOResponsavelParecerPisos"))),
+          fluidRow(column(12,verbatimTextOutput("VTOParecerPisos"))))),
+    tabItem(tabName = "SubSidebarSinalVital",
+      fluidRow(box("Controle Sinal Vital")))
+)))
+
+server <- function(session, input, output) {
+  observeEvent(input$EditButtonPisos, {
+    showModal(dataModalPisosEdit())
+  })
+  
+  observeEvent(input$EraseButtonPisos, {
+    showModal(dataModalPisosErase())
+  })
+  
+  observeEvent(input$ParecerOKPisos, {
+    # Check that data object exists and is data frame.
+    if (!is.null(input$SIParecerPisos) && nchar(input$TIParecerPisos)>0 && nchar(input$TAIParecerPisos)>0) {
+      if (!is.na(sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1])) {
+        Nome_Arquivo <- sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1]
+        file.move(paste0(Caminho, "Pisos/Parecer/",Nome_Arquivo), paste0(Caminho, "Pisos/Comentarios/"))
+        file.rename(paste0(Caminho, "Pisos/Comentarios/",Nome_Arquivo), paste0(Caminho, "Pisos/Comentarios/", gsub("Parecer", "Comentario", Nome_Arquivo)))
+      }
+      fileConn<-file(paste0(Caminho,"/Pisos/Parecer/Parecer",substr(gsub("-", "", input$DateInputSidebar),1,6),"_",format(Sys.time(), "%Y%m%d%H%M%S") ,".txt"))
+      writeLines(c(as.character(input$SIParecerPisos),as.character(input$TIParecerPisos), as.character(input$TAIParecerPisos), as.character(format(Sys.time(), "%d-%m-%Y %H:%M:%S"))), fileConn)
+      close(fileConn)
+      removeModal()
+    } else {
+      showModal(dataModalPisosEdit(failed = TRUE))
+    }
+  })
+  
+  observeEvent(input$ParecerOKPisos,{
+  if (!is.na(sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1])){
+   output$VTOFarolParecerPisos <- renderText({paste0("Farol do parecer: ", readLines(paste0(Caminho, "Pisos/Parecer/",sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1]))[1])})
+   output$VTOResponsavelParecerPisos <- renderText({paste0("Responsável pelo parecer: ", readLines(paste0(Caminho, "Pisos/Parecer/",sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1]))[2], " em ", readLines(paste0(Caminho, "Pisos/Parecer/",sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1]))[4])})
+   output$VTOParecerPisos <- renderText({paste0("Parecer: ", readLines(paste0(Caminho, "Pisos/Parecer/",sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1]))[3])})
+  }
+  },ignoreInit = TRUE)
+  
+  observeEvent(input$EraseOKPisos, {
+    if (!is.na(sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1])) {
+      Nome_Arquivo <- sort(list.files(paste0(Caminho, "Pisos/Parecer/")), decreasing = TRUE)[1]
+      file.remove(paste0(Caminho, "Pisos/Parecer/",Nome_Arquivo))
+      removeModal()}
+    
+    })
+  
+  }
+
+shinyApp(ui, server)

@@ -1,0 +1,30 @@
+function (files, destinations, overwrite = FALSE) 
+{
+    if (is_l0_char(files)) {
+        message("0 files moved. 0 failed.")
+        return(invisible(logical(0)))
+    }
+    destinations <- argchk_move_files(files = files, destinations = destinations, 
+        overwrite = overwrite)$destinations
+    n_created_dirs <- sum(suppressMessages(create_dir(destinations)))
+    if (n_created_dirs > 0) {
+        message(n_created_dirs, " ", "director", 
+            ifelse(n_created_dirs == 1, "y", "ies"), 
+            " created.")
+    }
+    new_paths <- get_new_home(files, destinations)
+    overwrite_attempt <- any(file.exists(new_paths))
+    out <- purrr::map2_lgl(files, new_paths, ~move_file_basic(.x, 
+        .y, overwrite))
+    n_succeeded <- sum(out)
+    n_failed <- sum(!out)
+    message(n_succeeded, ifelse(n_succeeded == 1, " file", 
+        " files"), " moved. ", n_failed, " failed.")
+    if (sum(!out) && !overwrite && overwrite_attempt) {
+        message("Some files failed to move because it would have caused files ", 
+            "to be overwritten. ", "\n", "    * To allow overwriting, use `overwrite = TRUE`.")
+    }
+    invisible(out)
+}
+<bytecode: 0x000001eaf61a3678>
+<environment: namespace:filesstrings>
